@@ -1,4 +1,4 @@
-package com.example.flutter_animation_tween
+package com.atlis.botycam
 
 import io.flutter.embedding.android.FlutterActivity
 
