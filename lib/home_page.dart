@@ -29,7 +29,7 @@ class _HomePageState extends State<HomePage> {
     return Scaffold(
       body: InAppWebView(
                 initialUrlRequest:
-                    URLRequest(url: WebUri("https://flutter.dev")),
+                    URLRequest(url: WebUri("https://cloud.botycam.com/")),
                 initialSettings: settings,
                 
                 
