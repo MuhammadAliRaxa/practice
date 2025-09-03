@@ -19,7 +19,7 @@ class _SplashScreenState extends State<SplashScreen> {
   }
   void delay()async {
     await Future.delayed(const Duration(seconds: 2));
-    Navigator.of(context).push(MaterialPageRoute(builder: (context) => HomePage(),));
+    Navigator.of(context).push(MaterialPageRoute(builder: (context) => WebPage(),));
   }
   @override
   Widget build(BuildContext context) {
