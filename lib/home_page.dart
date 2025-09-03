@@ -126,7 +126,7 @@ Future<void> downloadAndSaveToGallery(String url, String filename, {bool isVideo
                 child: InAppWebView(
                 key: webViewKey,
                 initialUrlRequest:
-                    URLRequest(url: WebUri("https://flutter.dev")),
+                    URLRequest(url: WebUri("https://cloud.botycam.com")),
                 initialSettings: settings,
                 onPermissionRequest: (controller, permissionRequest) async{
                   return PermissionResponse(
