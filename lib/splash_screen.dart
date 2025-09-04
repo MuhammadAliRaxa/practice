@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_animation_tween/custom_parent_widget.dart';
 import 'package:flutter_animation_tween/home_page.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -19,7 +20,7 @@ class _SplashScreenState extends State<SplashScreen> {
   }
   void delay()async {
     await Future.delayed(const Duration(seconds: 2));
-    Navigator.of(context).push(MaterialPageRoute(builder: (context) => WebPage(),));
+    Navigator.of(context).push(MaterialPageRoute(builder: (context) => CustomParentWidget(child: WebPage()),));
   }
   @override
   Widget build(BuildContext context) {
