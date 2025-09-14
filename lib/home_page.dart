@@ -1,11 +1,9 @@
 import 'dart:io';
 import 'dart:math';
-
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
-import 'package:media_store_plus/media_store_plus.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 
@@ -17,96 +15,53 @@ class WebPage extends StatefulWidget {
 }
 
 class _WebPageState extends State<WebPage> {
-
-  final mediaStore=MediaStore();
-
-  final GlobalKey webViewKey = GlobalKey();
-
   bool networkAvailable=true;
-
+  final GlobalKey webViewKey = GlobalKey();
   InAppWebViewController? webViewController;
-  InAppWebViewSettings settings = InAppWebViewSettings(isInspectable: kDebugMode,mediaPlaybackRequiresUserGesture: false,allowsInlineMediaPlayback: true,allowsAirPlayForMediaPlayback: true,geolocationEnabled: true,
-    allowContentAccess: true,
-    supportMultipleWindows: true,  
-    javaScriptCanOpenWindowsAutomatically: true,  
-    limitsNavigationsToAppBoundDomains: true,
-        javaScriptEnabled: true,
-        userAgent:  
-        "Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) "
-          "AppleWebKit/605.1.15 (KHTML, like Gecko) "
-          "Version/16.0 Mobile/15E148 Safari/604.1",
-        cacheMode: CacheMode.LOAD_DEFAULT,
-        mixedContentMode: MixedContentMode.MIXED_CONTENT_ALWAYS_ALLOW,);
-  PullToRefreshController? pullToRefreshController;
-  PullToRefreshSettings pullToRefreshSettings = PullToRefreshSettings(
-    color: Colors.blue,
-  );
-  bool pullToRefreshEnabled = true;
 
+  InAppWebViewSettings settings = InAppWebViewSettings(
+    javaScriptEnabled: true,
+    supportMultipleWindows: true,
+    javaScriptCanOpenWindowsAutomatically: true,
+    disableDefaultErrorPage: true,
+    mediaPlaybackRequiresUserGesture: false,
+    allowsInlineMediaPlayback: true,
+    cacheEnabled: true,
+    
+    clearCache: false,
+    userAgent: Platform.isAndroid
+          ? "Mozilla/5.0 (Linux; Android 13; Pixel 6) AppleWebKit/537.36 "
+            "(KHTML, like Gecko) Chrome/115.0.0.0 Mobile Safari/537.36"
+          : "Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) "
+            "AppleWebKit/605.1.15 (KHTML, like Gecko) "
+            "Version/16.0 Mobile/15E148 Safari/604.1",
+    limitsNavigationsToAppBoundDomains: true
+  );
+  PullToRefreshController? pullToRefreshController;
 
   @override
   void initState() {
     super.initState();
-    requestPermissions();
+    _requestPermissions();
 
-    pullToRefreshController = kIsWeb
-        ? null
-        : PullToRefreshController(
-            settings: pullToRefreshSettings,
-            onRefresh: () async {
-              if (defaultTargetPlatform == TargetPlatform.android) {
-                webViewController?.reload();
-              } else if (defaultTargetPlatform == TargetPlatform.iOS) {
-                webViewController?.loadUrl(
-                    urlRequest:
-                        URLRequest(url: await webViewController?.getUrl()));
-              }
-            },
-          );
+    pullToRefreshController = PullToRefreshController(
+      settings: PullToRefreshSettings(color: Colors.blue),
+      onRefresh: () async {
+        await webViewController?.reload();
+      },
+    );
+
+    setState(() {});
   }
 
-
-
-
-  Future<void> requestPermissions() async {
+  Future<void> _requestPermissions() async {
     await [
-    Permission.camera,
-    Permission.microphone,
-    Permission.locationWhenInUse,
-  ].request();
-}
-
-Future<void> downloadAndSaveToGallery(String url, String filename, {bool isVideo = false}) async {
-  // Ask for storage permission
-  if (await Permission.storage.request().isGranted) {
-    Directory? downloadsDir;
-
-    if (Platform.isAndroid) {
-      downloadsDir = Directory("/storage/emulated/0/Download");
-    } else if (Platform.isIOS) {
-      downloadsDir = await getApplicationDocumentsDirectory();
-    }
-
-    String savePath = "${downloadsDir!.path}/$filename";
-
-    // Download file
-    await Dio().download(url, savePath);
-
-    print("✅ File downloaded to: $savePath");
-
-    // Save to gallery (important for Photos app visibility)
+      Permission.camera,
+      Permission.microphone,
+      Permission.locationWhenInUse,
+      if (Platform.isAndroid) Permission.storage,
+    ].request();
   }
-}
-
-// Future<bool> isPWAInstalled() async {  
-//   final prefs = await SharedPreferences.getInstance();  
-//   return prefs.getBool('isInstalled') ?? false;  
-// }  
-  
-// void setPWAInstalled({bool installed = true}) async {  
-//   final prefs = await SharedPreferences.getInstance();  
-//   await prefs.setBool('isInstalled', installed);  
-// }
 
   @override
   Widget build(BuildContext context) {
@@ -120,61 +75,24 @@ Future<void> downloadAndSaveToGallery(String url, String filename, {bool isVideo
         }
       },
       child: Scaffold(
-          body: SafeArea(
-            child: Column(children: <Widget>[
-              Expanded(
-                child: InAppWebView(
-                key: webViewKey,
-                initialUrlRequest:
-                    URLRequest(url: WebUri("https://cloud.botycam.com")),
-                initialSettings: settings,
-                onPermissionRequest: (controller, permissionRequest) async{
-                  return PermissionResponse(
-                    resources: permissionRequest.resources,
-                    action:PermissionResponseAction.GRANT
-                  );
-                },
-                onGeolocationPermissionsShowPrompt: (controller, origin) async {
-                return GeolocationPermissionShowPromptResponse(
-                origin: origin,
-                allow: true,
-                retain: true,
-                  );
-                },
-                pullToRefreshController: pullToRefreshController,
-                onWebViewCreated: (InAppWebViewController controller) {
-                  webViewController = controller;
-                },
-                onLoadStop: (controller, url) {
-                  pullToRefreshController?.endRefreshing();
-                },
-                onReceivedError: (controller, request, error) {
-                  pullToRefreshController?.endRefreshing();
-                },
-                onProgressChanged: (controller, progress) {
-                  if (progress == 100) {
-                    pullToRefreshController?.endRefreshing();
-                  }
-                },
-
-                onDownloadStartRequest: (controller, request) async {
-          // Ask permission
-          if (await Permission.storage.isGranted) {
-            String url = request.url.toString();
-            
-            await downloadAndSaveToGallery(url, "${Random().nextInt(68127687)}_image.mp4");
-
-          
-          }else{
-            String url = request.url.toString();
-            await Permission.storage.request();
-            
-            await downloadAndSaveToGallery(url, "${Random().nextInt(68127687)}_image.mp4");
-          }
-          },    
-              )),
-            ]),
-          )),
+        body: SafeArea(
+          child: InAppWebView(
+            key: webViewKey,
+            initialUrlRequest: URLRequest(url: WebUri("https://cloud.botycam.com")),
+            initialSettings: settings,
+            pullToRefreshController: pullToRefreshController,
+            onWebViewCreated: (controller) {
+              webViewController = controller;
+            },
+            onPermissionRequest: (controller, permissionRequest) async{
+                    return PermissionResponse(
+                      resources: permissionRequest.resources,
+                      action:PermissionResponseAction.GRANT
+                    );
+                  },
+          ),
+        ),
+      ),
     );
   }
 }
